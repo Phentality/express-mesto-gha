@@ -42,7 +42,9 @@ const setLike = (req, res) => {
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
-    .then((r) => res.status(200).send(r))
+    .then((r) => {
+      res.status(200).send(r);
+    })
     .catch(() => res.status(500).send({ message: 'Server Error' }));
 };
 
