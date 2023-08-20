@@ -9,6 +9,10 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
 const { PORT = 3000 } = process.env;
 
 const app = express();
+
+app.use('*', (req, res) => {
+  res.status(404).send({ message: 'Куда ты не туда забрёл, обратись к инструкции API :)' });
+});
 app.use(express.static('public'));
 
 app.use((req, res, next) => {
