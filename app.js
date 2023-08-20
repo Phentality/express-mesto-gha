@@ -6,9 +6,17 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
   useNewUrlParser: true,
 });
 
-const { PORT = 3000, BASE_PATH } = process.env;
+const { PORT = 3000 } = process.env;
 
 const app = express();
+
+app.use((req, res, next) => {
+  res.status(404).json({
+    message: 'Оу, ты потерялся, самое время обратиться к инструкции по API :)',
+  });
+
+  next();
+});
 
 app.use((req, res, next) => {
   req.user = {
@@ -22,7 +30,4 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(router);
 
-app.listen(PORT, () => {
-  console.log('Ссылка на сервер');
-  console.log(BASE_PATH);
-});
+app.listen(PORT);
