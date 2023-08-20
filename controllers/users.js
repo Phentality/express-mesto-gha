@@ -3,18 +3,18 @@ const userModel = require('../models/user');
 
 const getUsers = (req, res) => {
   userModel.find({})
-    .then((r) => res.status(200).send(r))
+    .then((user) => res.status(200).send(user))
     .catch(() => res.status(500).send({ message: 'Server Error' }));
 };
 
 const getUserById = (req, res) => {
   const { userID } = req.params;
   return userModel.findById(userID)
-    .then((r) => {
-      if (r === null) {
+    .then((user) => {
+      if (user === null) {
         return res.status(404).send({ message: 'User not found' });
       }
-      return res.status(200).send(r);
+      return res.status(200).send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -61,7 +61,7 @@ const updateUserAvatarById = (req, res) => {
 const createUser = (req, res) => {
   const { name, about, avatar } = req.body;
   return userModel.create({ name, about, avatar })
-    .then((r) => res.status(201).send(r))
+    .then((user) => res.status(201).send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(400).send({ message: 'Invalid Data' });

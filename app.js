@@ -10,8 +10,6 @@ const { PORT = 3000 } = process.env;
 
 const app = express();
 
-app.use(express.static('public'));
-
 app.use((req, res, next) => {
   req.user = {
     _id: '64e1c9b0a21068052f8b49ed',
@@ -22,7 +20,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(router);
+app.use('/', router);
 
 app.use('*', (req, res) => {
   res.status(404).send({ message: 'Куда ты не туда забрёл, обратись к инструкции API :)' });

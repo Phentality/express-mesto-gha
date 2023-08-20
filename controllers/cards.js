@@ -3,18 +3,18 @@ const cardModel = require('../models/card');
 
 const getCards = (req, res) => {
   cardModel.find({})
-    .then((r) => res.status(200).send(r))
+    .then((card) => res.status(200).send(card))
     .catch(() => res.status(500).send({ message: 'Server Error' }));
 };
 
 const deleteCard = (req, res) => {
   const cardID = req.params.id;
   return cardModel.findByIdAndRemove(cardID)
-    .then((r) => {
-      if (r === null) {
+    .then((card) => {
+      if (card === null) {
         return res.status(404).send({ message: 'Card not found' });
       }
-      return res.status(200).send({ data: r });
+      return res.status(200).send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -27,7 +27,7 @@ const deleteCard = (req, res) => {
 const createCard = (req, res) => {
   const { name, link } = req.body;
   return cardModel.create({ name, link, owner: req.user._id })
-    .then((r) => res.status(201).send(r))
+    .then((card) => res.status(201).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(400).send({ message: 'Invalid Data' });
@@ -42,11 +42,11 @@ const setLike = (req, res) => {
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
-    .then((r) => {
-      if (r === null) {
+    .then((like) => {
+      if (like === null) {
         return res.status(404).send({ message: 'Card not found' });
       }
-      return res.status(200).send(r);
+      return res.status(200).send(like);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -62,11 +62,11 @@ const deleteLike = (req, res) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
-    .then((r) => {
-      if (r === null) {
+    .then((like) => {
+      if (like === null) {
         return res.status(404).send({ message: 'Card not found' });
       }
-      return res.status(200).send(r);
+      return res.status(200).send(like);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
