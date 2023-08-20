@@ -43,9 +43,17 @@ const setLike = (req, res) => {
     { new: true },
   )
     .then((r) => {
-      res.status(200).send(r);
+      if (r === null) {
+        return res.status(404).send({ message: 'Card not found' });
+      }
+      return res.status(200).send(r);
     })
-    .catch(() => res.status(500).send({ message: 'Server Error' }));
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        return res.status(400).send({ message: 'Invalid ID' });
+      }
+      return res.status(500).send({ message: 'Server Error' });
+    });
 };
 
 const deleteLike = (req, res) => {
