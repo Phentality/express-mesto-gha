@@ -11,14 +11,6 @@ const { PORT = 3000 } = process.env;
 const app = express();
 
 app.use((req, res, next) => {
-  res.status(404).json({
-    message: 'Оу, ты потерялся, самое время обратиться к инструкции по API :)',
-  });
-
-  next();
-});
-
-app.use((req, res, next) => {
   req.user = {
     _id: '64e1c9b0a21068052f8b49ed',
   };
