@@ -18,10 +18,7 @@ const deleteCard = (req, res) => {
   const cardID = req.params.id;
   return cardModel.findByIdAndRemove(cardID).orFail()
     .then((card) => {
-      if (card === null) {
-        return res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Card not found' });
-      }
-      return res.status(HTTP_STATUS_OK).send({ data: card });
+      res.status(HTTP_STATUS_OK).send({ data: card });
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {

@@ -18,10 +18,7 @@ const getUserById = (req, res) => {
   const { userID } = req.params;
   return userModel.findById(userID).orFail()
     .then((user) => {
-      if (user === null) {
-        return res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'User not found' });
-      }
-      return res.status(HTTP_STATUS_OK).send(user);
+      res.status(HTTP_STATUS_OK).send(user);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
