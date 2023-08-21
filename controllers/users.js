@@ -33,10 +33,8 @@ const getUserById = (req, res) => {
       return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
     });
 };
-
-const updateUserById = (req, res) => {
-  const { name, about } = req.body;
-  userModel.findByIdAndUpdate(req.user._id, { name, about }, {
+function updateModel(dat, req, res) {
+  userModel.findByIdAndUpdate(req.user._id, dat, {
     new: true,
     runValidators: true,
   })
@@ -49,23 +47,15 @@ const updateUserById = (req, res) => {
       }
       return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
     });
+}
+const updateUserById = (req, res) => {
+  const { name, about } = req.body;
+  updateModel({ name, about }, req, res);
 };
 
 const updateUserAvatarById = (req, res) => {
   const { avatar } = req.body;
-  userModel.findByIdAndUpdate(req.user._id, { avatar }, {
-    new: true,
-    runValidators: true,
-  })
-    .then((user) => {
-      res.send({ data: user });
-    })
-    .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Invalid Data' });
-      }
-      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
-    });
+  updateModel({ avatar }, req, res);
 };
 
 const createUser = (req, res) => {
