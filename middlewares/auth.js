@@ -5,15 +5,14 @@ const jwt = require('jsonwebtoken');
 
 // eslint-disable-next-line consistent-return
 module.exports = (req, res, next) => {
-  const { authorization } = req.headers;
+  const token = req.cookies.jwt;
 
-  if (!authorization) {
+  if (!token) {
     return res
       .status(HTTP_STATUS_UNAUTHORIZED)
       .send({ message: 'Authorization required' });
   }
 
-  const token = authorization;
   let payload;
 
   try {
