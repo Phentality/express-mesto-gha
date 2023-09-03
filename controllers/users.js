@@ -7,7 +7,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const BadRequestError = require('../errors/badRequestError');
 const NotFoundError = require('../errors/notFoundError');
-const ForbiddenError = require('../errors/forbiddenError');
 const UnauthorizedError = require('../errors/unauthorizedError');
 const ConflictError = require('../errors/conflictError');
 const userModel = require('../models/user');
@@ -82,7 +81,9 @@ const createUser = (req, res, next) => {
   bcrypt.hash(password, saltRounds, (error, hash) => userModel.create({
     name, about, avatar, email, password: hash,
   })
-    .then((user) => res.status(HTTP_STATUS_CREATED).send(user))
+    .then(() => res.status(HTTP_STATUS_CREATED).send({
+      name, about, avatar, email,
+    }))
     .catch((err) => {
       if (err.code === 11000) {
         return next(new ConflictError('User with this email already register'));
@@ -103,7 +104,7 @@ const login = (req, res, next) => {
     // eslint-disable-next-line consistent-return
     .then((user) => {
       if (!user) {
-        return next(new ForbiddenError('User does not exist'));
+        return next(new UnauthorizedError('User does not exist'));
       }
       bcrypt.compare(password, user.password, (error, isValid) => {
         if (!isValid) {
