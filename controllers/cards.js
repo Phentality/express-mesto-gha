@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const cardModel = require('../models/card');
 const BadRequestError = require('../errors/badRequestError');
 const NotFoundError = require('../errors/notFoundError');
+const ForbiddenError = require('../errors/forbiddenError');
 
 const getCards = (req, res, next) => {
   cardModel.find({})
@@ -19,7 +20,7 @@ const deleteCard = (req, res, next) => {
   return cardModel.findById(cardID).orFail()
     .then((data) => {
       if (!data.owner.equals(ownerID)) {
-        throw new BadRequestError('That card not yours');
+        throw new ForbiddenError('That card not yours');
       }
       return cardModel.findByIdAndRemove(cardID)
         .then((card) => {

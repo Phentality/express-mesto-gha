@@ -1,3 +1,5 @@
+/* eslint-disable no-control-regex */
+/* eslint-disable no-useless-escape */
 const router = require('express').Router();
 const { celebrate, Joi } = require('celebrate');
 const {
@@ -19,7 +21,8 @@ router.patch('/me', celebrate({
 }), updateUserById);
 router.patch('/me/avatar', celebrate({
   body: Joi.object().keys({
-    avatar: Joi.string().min(2).uri(),
+    // eslint-disable-next-line prefer-regex-literals
+    avatar: Joi.string().min(2).pattern(new RegExp('^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$')),
   }),
 }), updateUserAvatarById);
 
