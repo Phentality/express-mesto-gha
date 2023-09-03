@@ -108,7 +108,7 @@ const login = (req, res, next) => {
       }
       bcrypt.compare(password, user.password, (error, isValid) => {
         if (!isValid) {
-          throw new UnauthorizedError('Password is not correct');
+          return next(new UnauthorizedError('Password is not correct'));
         }
 
         const token = jwt.sign({

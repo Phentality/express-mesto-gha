@@ -1,17 +1,14 @@
-/* eslint-disable no-useless-escape */
 const {
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
 } = require('http2').constants;
 const express = require('express');
+const helmet = require('helmet');
+const { rateLimit } = require('express-rate-limit');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
-const { celebrate, Joi } = require('celebrate');
+const NotFoundError = require('./errors/notFoundError');
 const router = require('./routes');
-const {
-  createUser, login,
-} = require('./controllers/users');
-const auth = require('./middlewares/auth');
 
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
   useNewUrlParser: true,
@@ -20,31 +17,21 @@ mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
 const { PORT = 3000 } = process.env;
 
 const app = express();
+app.use(helmet());
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
+app.use(limiter);
 
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.post('/signin', celebrate({
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required().min(6),
-  }),
-}), login);
-app.post('/signup', celebrate({
-  body: Joi.object().keys({
-    name: Joi.string().min(2).max(30),
-    about: Joi.string().min(2).max(30),
-    // eslint-disable-next-line prefer-regex-literals
-    avatar: Joi.string().min(2).pattern(new RegExp('(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?\/[a-zA-Z0-9]{2,}|((https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z]{2,}(\.[a-zA-Z]{2,})(\.[a-zA-Z]{2,})?)|(https:\/\/www\.|http:\/\/www\.|https:\/\/|http:\/\/)?[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}(\.[a-zA-Z0-9]{2,})?')),
-    email: Joi.string().required().email(),
-    password: Joi.string().required().min(6),
-  }),
-}), createUser);
-app.use(auth);
 app.use('/', router);
-app.use('*', (req, res) => {
-  res.status(404).send({ message: 'Куда ты не туда забрёл, обратись к инструкции API :)' });
-});
+// eslint-disable-next-line no-unused-vars
+app.use('*', (req, res, next) => next(new NotFoundError('check API instruction')));
 app.use(errors());
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
