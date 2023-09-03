@@ -10,7 +10,7 @@ module.exports = (req, res, next) => {
   if (!authorization) {
     return res
       .status(HTTP_STATUS_UNAUTHORIZED)
-      .send({ message: 'Необходима авторизация' });
+      .send({ message: 'Authorization required' });
   }
 
   const token = authorization;
@@ -21,7 +21,7 @@ module.exports = (req, res, next) => {
   } catch (err) {
     return res
       .status(HTTP_STATUS_UNAUTHORIZED)
-      .send({ message: 'Необходима авторизация' });
+      .send({ message: 'Authorization required' });
   }
 
   req.user = payload;

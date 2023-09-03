@@ -114,7 +114,7 @@ const login = (req, res, next) => {
           exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7),
           id: user._id,
         }, jwtSecret);
-        return res.status(HTTP_STATUS_OK).send({ token });
+        return res.status(HTTP_STATUS_OK).res.cookie('jwt', token).send({ token });
       });
     })
     .catch((err) => next(err));
