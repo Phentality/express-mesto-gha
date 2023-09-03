@@ -1,6 +1,3 @@
-const {
-  HTTP_STATUS_INTERNAL_SERVER_ERROR,
-} = require('http2').constants;
 const express = require('express');
 const helmet = require('helmet');
 const { rateLimit } = require('express-rate-limit');
@@ -9,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
 const NotFoundError = require('./errors/notFoundError');
 const router = require('./routes');
+const errorHandler = require('./middlewares/error-handler');
 
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
   useNewUrlParser: true,
@@ -34,16 +32,6 @@ app.use('/', router);
 app.use('*', (req, res, next) => next(new NotFoundError('check API instruction')));
 app.use(errors());
 // eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => {
-  const { statusCode = HTTP_STATUS_INTERNAL_SERVER_ERROR, message } = err;
-
-  res
-    .status(statusCode)
-    .send({
-      message: statusCode === HTTP_STATUS_INTERNAL_SERVER_ERROR
-        ? 'Server Error'
-        : message,
-    });
-});
+app.use(errorHandler);
 
 app.listen(PORT);
