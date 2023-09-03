@@ -39,7 +39,7 @@ const deleteCard = (req, res, next) => {
 
 const createCard = (req, res, next) => {
   const { name, link } = req.body;
-  return cardModel.create({ name, link, owner: req.user._id })
+  return cardModel.create({ name, link, owner: req.user.id })
     .then((card) => res.status(HTTP_STATUS_CREATED).send(card.id))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
@@ -52,7 +52,7 @@ const createCard = (req, res, next) => {
 const setLike = (req, res, next) => {
   cardModel.findByIdAndUpdate(
     req.params.cardId,
-    { $addToSet: { likes: req.user._id } },
+    { $addToSet: { likes: req.user.id } },
     { new: true },
   )
     .then((like) => {
@@ -72,7 +72,7 @@ const setLike = (req, res, next) => {
 const deleteLike = (req, res, next) => {
   cardModel.findByIdAndUpdate(
     req.params.cardId,
-    { $pull: { likes: req.user._id } },
+    { $pull: { likes: req.user.id } },
     { new: true },
   )
     .then((like) => {

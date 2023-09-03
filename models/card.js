@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const isURL = require('validator/lib/isURL');
 
 const cardSchema = new mongoose.Schema({
   name: {
@@ -11,6 +12,9 @@ const cardSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 2,
+    validate: {
+      validator: (v) => isURL(v),
+    },
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,

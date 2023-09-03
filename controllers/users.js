@@ -37,7 +37,7 @@ const getUserById = (req, res, next) => {
     });
 };
 function updateModel(dat, req, res, next) {
-  userModel.findByIdAndUpdate(req.user._id, dat, {
+  userModel.findByIdAndUpdate(req.user.id, dat, {
     new: true,
     runValidators: true,
   })
@@ -62,7 +62,7 @@ const updateUserAvatarById = (req, res) => {
 };
 
 const getUserInfo = (req, res, next) => {
-  userModel.findById(req.user._id)
+  userModel.findById(req.user.id)
     .then((user) => {
       res.send(user);
     })

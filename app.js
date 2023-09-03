@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 const {
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
 } = require('http2').constants;
