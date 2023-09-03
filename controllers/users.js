@@ -1,27 +1,27 @@
 const {
-  HTTP_STATUS_BAD_REQUEST,
-  HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
   HTTP_STATUS_CREATED,
-  HTTP_STATUS_INTERNAL_SERVER_ERROR,
-  HTTP_STATUS_FORBIDDEN,
-  HTTP_STATUS_UNAUTHORIZED,
 } = require('http2').constants;
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const BadRequestError = require('../errors/badRequestError');
+const NotFoundError = require('../errors/notFoundError');
+const ForbiddenError = require('../errors/forbiddenError');
+const UnauthorizedError = require('../errors/unauthorizedError');
+const ConflictError = require('../errors/conflictError');
 const userModel = require('../models/user');
 
 const saltRounds = 10;
 const jwtSecret = 'secret';
 
-const getUsers = (req, res) => {
+const getUsers = (req, res, next) => {
   userModel.find({})
     .then((user) => res.status(HTTP_STATUS_OK).send(user))
-    .catch(() => res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' }));
+    .catch((err) => next(err));
 };
 
-const getUserById = (req, res) => {
+const getUserById = (req, res, next) => {
   const { userID } = req.params;
   return userModel.findById(userID).orFail()
     .then((user) => {
@@ -29,15 +29,15 @@ const getUserById = (req, res) => {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'User not found' });
+        return next(new NotFoundError('User not found'));
       }
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Invalid ID' });
+        return next(new BadRequestError('Invalid ID'));
       }
-      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
+      return next(err);
     });
 };
-function updateModel(dat, req, res) {
+function updateModel(dat, req, res, next) {
   userModel.findByIdAndUpdate(req.user._id, dat, {
     new: true,
     runValidators: true,
@@ -47,9 +47,9 @@ function updateModel(dat, req, res) {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Invalid Data' });
+        return next(new BadRequestError('Invalid Data'));
       }
-      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
+      return next(err);
     });
 }
 const updateUserById = (req, res) => {
@@ -62,7 +62,20 @@ const updateUserAvatarById = (req, res) => {
   updateModel({ avatar }, req, res);
 };
 
-const createUser = (req, res) => {
+const getUserInfo = (req, res, next) => {
+  userModel.findById(req.user._id)
+    .then((user) => {
+      res.send(user);
+    })
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        return next(new BadRequestError('Invalid Data'));
+      }
+      return next(err);
+    });
+};
+
+const createUser = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
@@ -71,27 +84,30 @@ const createUser = (req, res) => {
   })
     .then(() => res.status(HTTP_STATUS_CREATED).send({ message: `User ${email} is registered` }))
     .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Invalid Data' });
+      if (err.code === 11000) {
+        return next(new ConflictError('User with this email already register'));
       }
-      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
+      if (err instanceof mongoose.Error.ValidationError) {
+        return next(new BadRequestError('Invalid Data'));
+      }
+      return next(err);
     }));
 };
 
-const login = (req, res) => {
+const login = (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'The fields email and password must be filled in' });
+    return next(new BadRequestError('The fields email and password must be filled in'));
   }
   return userModel.findOne({ email }).select('+password')
     // eslint-disable-next-line consistent-return
     .then((user) => {
       if (!user) {
-        return res.status(HTTP_STATUS_FORBIDDEN).send({ message: 'User does not exist' });
+        return next(new ForbiddenError('User does not exist'));
       }
       bcrypt.compare(password, user.password, (error, isValid) => {
         if (!isValid) {
-          return res.status(HTTP_STATUS_UNAUTHORIZED).send({ message: 'Password is not correct' });
+          throw new UnauthorizedError('Password is not correct');
         }
 
         const token = jwt.sign({
@@ -101,7 +117,7 @@ const login = (req, res) => {
         return res.status(HTTP_STATUS_OK).send({ token });
       });
     })
-    .catch(() => res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' }));
+    .catch((err) => next(err));
 };
 
 module.exports = {
@@ -111,4 +127,5 @@ module.exports = {
   updateUserAvatarById,
   createUser,
   login,
+  getUserInfo,
 };

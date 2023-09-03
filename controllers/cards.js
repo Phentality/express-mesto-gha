@@ -1,49 +1,55 @@
 const {
-  HTTP_STATUS_BAD_REQUEST,
-  HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
   HTTP_STATUS_CREATED,
-  HTTP_STATUS_INTERNAL_SERVER_ERROR,
 } = require('http2').constants;
 const mongoose = require('mongoose');
 const cardModel = require('../models/card');
+const BadRequestError = require('../errors/badRequestError');
+const NotFoundError = require('../errors/notFoundError');
 
-const getCards = (req, res) => {
+const getCards = (req, res, next) => {
   cardModel.find({})
     .then((card) => res.status(HTTP_STATUS_OK).send(card))
-    .catch(() => res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' }));
+    .catch((err) => next(err));
 };
 
-const deleteCard = (req, res) => {
+const deleteCard = (req, res, next) => {
   const cardID = req.params.id;
-  return cardModel.findByIdAndRemove(cardID).orFail()
-    .then((card) => {
-      res.status(HTTP_STATUS_OK).send({ data: card });
+  const ownerID = req.user._id;
+  return cardModel.findById(cardID).orFail()
+    .then((data) => {
+      if (!data.owner.equals(ownerID)) {
+        throw new BadRequestError('That card not yours');
+      }
+      return cardModel.findByIdAndRemove(cardID)
+        .then((card) => {
+          res.status(HTTP_STATUS_OK).send({ data: card });
+        });
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Card not found' });
+        return next(new NotFoundError('Card not found'));
       }
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Invalid ID' });
+        return next(new BadRequestError('Invalid ID'));
       }
-      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
+      return next(err);
     });
 };
 
-const createCard = (req, res) => {
+const createCard = (req, res, next) => {
   const { name, link } = req.body;
   return cardModel.create({ name, link, owner: req.user._id })
     .then((card) => res.status(HTTP_STATUS_CREATED).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Invalid Data' });
+        return next(new BadRequestError('Invaliad Data'));
       }
-      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
+      return next(err);
     });
 };
 
-const setLike = (req, res) => {
+const setLike = (req, res, next) => {
   cardModel.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
@@ -51,19 +57,19 @@ const setLike = (req, res) => {
   )
     .then((like) => {
       if (like === null) {
-        return res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Card not found' });
+        return next(new NotFoundError('Card not found'));
       }
       return res.status(HTTP_STATUS_OK).send(like);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Invalid ID' });
+        return next(new BadRequestError('Invalid ID'));
       }
-      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
+      return next(err);
     });
 };
 
-const deleteLike = (req, res) => {
+const deleteLike = (req, res, next) => {
   cardModel.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
@@ -71,15 +77,15 @@ const deleteLike = (req, res) => {
   )
     .then((like) => {
       if (like === null) {
-        return res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Card not found' });
+        throw new NotFoundError('Card not found');
       }
       return res.status(HTTP_STATUS_OK).send(like);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Invalid ID' });
+        return next(new BadRequestError('Invalid ID'));
       }
-      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
+      return next(err);
     });
 };
 

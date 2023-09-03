@@ -10,6 +10,7 @@ const cardSchema = new mongoose.Schema({
   link: {
     type: String,
     required: true,
+    minlength: 2,
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
