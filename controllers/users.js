@@ -82,7 +82,7 @@ const createUser = (req, res, next) => {
   bcrypt.hash(password, saltRounds, (error, hash) => userModel.create({
     name, about, avatar, email, password: hash,
   })
-    .then(() => res.status(HTTP_STATUS_CREATED).send({ message: `User ${email} is registered` }))
+    .then((user) => res.status(HTTP_STATUS_CREATED).send(user))
     .catch((err) => {
       if (err.code === 11000) {
         return next(new ConflictError('User with this email already register'));
