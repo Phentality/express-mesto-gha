@@ -15,7 +15,7 @@ const getCards = (req, res, next) => {
 
 const deleteCard = (req, res, next) => {
   const cardID = req.params.id;
-  const ownerID = req.user._id;
+  const ownerID = req.user.id;
   return cardModel.findById(cardID).orFail()
     .then((data) => {
       if (!data.owner.equals(ownerID)) {
@@ -40,7 +40,7 @@ const deleteCard = (req, res, next) => {
 const createCard = (req, res, next) => {
   const { name, link } = req.body;
   return cardModel.create({ name, link, owner: req.user.id })
-    .then((card) => res.status(HTTP_STATUS_CREATED).send(card.id))
+    .then((card) => res.status(HTTP_STATUS_CREATED).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return next(new BadRequestError('Invaliad Data'));
