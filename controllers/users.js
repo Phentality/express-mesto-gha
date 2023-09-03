@@ -4,9 +4,16 @@ const {
   HTTP_STATUS_OK,
   HTTP_STATUS_CREATED,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
+  HTTP_STATUS_FORBIDDEN,
+  HTTP_STATUS_UNAUTHORIZED,
 } = require('http2').constants;
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const userModel = require('../models/user');
+
+const saltRounds = 10;
+const jwtSecret = 'secret';
 
 const getUsers = (req, res) => {
   userModel.find({})
@@ -56,15 +63,45 @@ const updateUserAvatarById = (req, res) => {
 };
 
 const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-  return userModel.create({ name, about, avatar })
-    .then((user) => res.status(HTTP_STATUS_CREATED).send(user))
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  bcrypt.hash(password, saltRounds, (error, hash) => userModel.create({
+    name, about, avatar, email, password: hash,
+  })
+    .then(() => res.status(HTTP_STATUS_CREATED).send({ message: `User ${email} is registered` }))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Invalid Data' });
       }
       return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' });
-    });
+    }));
+};
+
+const login = (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'The fields email and password must be filled in' });
+  }
+  return userModel.findOne({ email }).select('+password')
+    // eslint-disable-next-line consistent-return
+    .then((user) => {
+      if (!user) {
+        return res.status(HTTP_STATUS_FORBIDDEN).send({ message: 'User does not exist' });
+      }
+      bcrypt.compare(password, user.password, (error, isValid) => {
+        if (!isValid) {
+          return res.status(HTTP_STATUS_UNAUTHORIZED).send({ message: 'Password is not correct' });
+        }
+
+        const token = jwt.sign({
+          exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7),
+          id: user._id,
+        }, jwtSecret);
+        return res.status(HTTP_STATUS_OK).send({ token });
+      });
+    })
+    .catch(() => res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Server Error' }));
 };
 
 module.exports = {
@@ -73,4 +110,5 @@ module.exports = {
   updateUserById,
   updateUserAvatarById,
   createUser,
+  login,
 };
